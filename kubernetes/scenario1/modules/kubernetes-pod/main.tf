@@ -1,6 +1,6 @@
 # Kubernetes provider configuration
 provider "kubernetes" {
-  config_path = "~/.kube/config"  # Ensure your kubeconfig is correct for the cluster
+  config_path = "~/.kube/docker-desktop-config"  # Ensure your kubeconfig is correct for the cluster
 }
 
 # Read and decode the YAML file
