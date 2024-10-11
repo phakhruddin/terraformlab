@@ -1,0 +1,12 @@
+pods:
+  - name: "nginx-pod"
+    image: "nginx"
+    port: 80
+    labels:
+      app: "nginx"
+  - name: "redis-pod"
+    image: "redis"
+    port: 6379
+    labels:
+      app: "redis"
+
