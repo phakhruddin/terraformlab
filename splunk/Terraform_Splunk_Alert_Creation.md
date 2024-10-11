@@ -1,4 +1,4 @@
-create a terraform code to add savedsearch alert to splunk
+# Splunk Terraform Lab
 
 To create a Terraform configuration that adds a saved search alert to Splunk, you can use the `splunk` provider. If this provider does not exist or you prefer not to use it, you'll need to rely on a custom `null_resource` or `local-exec` to interact with Splunk’s REST API directly.
 
@@ -221,7 +221,7 @@ resource "splunk_saved_searches" "alert" {
 
 This configuration uses the `splunk_saved_searches` resource from the Splunk provider to manage saved searches and alerts programmatically. You can find more details about configuring the saved searches on the [Splunk Terraform provider documentation](https://registry.terraform.io/providers/splunk/splunk/latest/docs/resources/saved_searches) [Terraform Registry](https://registry.terraform.io/providers/splunk/splunk/latest/docs#:~:text=URL%3A%20https%3A%2F%2Fregistry,100) [Terraform Registry](https://registry.terraform.io/providers/splunk/splunk/latest#:~:text=URL%3A%20https%3A%2F%2Fregistry,100).
 
-please modify the code by defining the alert parameter in user defined yaml file as an input parameter
+## modify the code by defining the alert parameter in user defined yaml file as an input parameter
 
 To modify the Terraform configuration to use a YAML file for input parameters like the search query, alert name, and other alert configuration, we can read the YAML file using the `terraform` provider’s `file` and `yamldecode` functions. Here’s how you can implement it.
 
@@ -292,7 +292,7 @@ resource "splunk_saved_searches" "alert" {
 
 This approach provides flexibility for defining and managing multiple alert configurations externally, and it integrates smoothly with Terraform workflows.
 
-enhance the above for multiple alert names in the input file and use foreach loop
+## Enhance the above for multiple alert names in the input file and use foreach loop ##
 
 To handle multiple alert configurations in the YAML file and apply them using a `for_each` loop in Terraform, you can adjust the YAML file structure and the Terraform configuration accordingly. Here's how you can enhance your setup:
 
@@ -464,7 +464,7 @@ output "splunk_alerts" {
 
 This setup provides flexibility to manage different environments and ensures alerts are only created when necessary in the production environment.
 
-lets add the logic so that the alert creation only occur if the environment is prod and business is finance.
+## Add the logic so that the alert creation only occur if the environment is prod and business is finance.
 
 To include logic so that alerts are created only when the environment is "prod" and the business is "finance," we can extend the condition in the `for_each` loop by introducing another variable called `business`. This will be checked along with `environment` to ensure alerts are created only if both conditions are met.
 
@@ -561,7 +561,7 @@ output "splunk_alerts" {
 
 This approach allows you to manage environment-specific and business-specific alert creation, adding more flexibility to your Terraform code.
 
-add logic using "can" function not to fail the alert creation if the parameter is missing or empty.
+## Add logic using "can" function not to fail the alert creation if the parameter is missing or empty.
 
 In Terraform, the `can()` function can be used to prevent failures when accessing missing or empty parameters. It checks whether a value or expression can be accessed and returns a boolean, allowing you to safely handle missing or empty parameters without causing Terraform to fail.
 
@@ -1138,7 +1138,7 @@ terraform apply -var="environment=prod" -var="splunk_username=<your_splunk_user>
 
 This approach is scalable and allows you to easily manage multiple business units by simply updating the map with new units and corresponding URLs.
 
-modify the code so that the business unit is a subdirectory inside the module, and the input yaml file for alert parameter is inside a business unit subdirectory.
+## The business unit is a subdirectory inside the module, and the input yaml file for alert parameter is inside a business unit subdirectory.
 
 To organize the YAML input files into subdirectories for each business unit inside the Terraform module, we can adjust the structure of the module and the main configuration. Each business unit will have its own subdirectory inside the module directory, and the alert parameters will be placed inside the respective subdirectory as a YAML file.
 
@@ -1319,7 +1319,7 @@ terraform apply -var="environment=prod" -var="splunk_username=<your_splunk_user>
 
 This solution organizes the YAML files and module inputs in a scalable way, making it easy to maintain and add new business units in the future.
 
-reducing down the blocks repetition in root main.tf above by adding for loop and make business unit name dynamic. 
+## Reduce down the blocks repetition in root main.tf above by adding for loop and make business unit name dynamic. 
 
 To reduce the repetition in your `main.tf` and dynamically loop over the business units, you can use a `for_each` loop to iterate over the business units. Instead of repeating blocks for each business unit (finance, marketing, engineering), we can refactor the configuration to loop through a map that includes the business unit name and corresponding YAML file.
 
