@@ -213,6 +213,7 @@ You might also want to ignore other files like Terraform plan files (`*.tfplan`)
 
 ```gitignore
 # Ignore Terraform state files
+*.terraform
 *.tfstate
 *.tfstate.backup
 
