@@ -1,0 +1,17 @@
+---
+buckets:
+  - name: "my-bucket-1"
+    region: "us-east-1"
+    objects:
+      - source: "./files/file1.txt"
+        destination: "file1.txt"
+  - name: "my-bucket-2"
+    region: "us-west-1"
+    objects:
+      - source: "./files/file2.txt"
+        destination: "file2.txt"
+  - name: "my-bucket-3"
+    region: "us-east-2"
+    objects:
+      - source: "./files/file3.txt"
+        destination: "file3.txt"
