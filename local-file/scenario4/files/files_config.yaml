@@ -1,0 +1,7 @@
+files:
+  - name: "config-prod.txt"
+    permission: "600"
+  - name: "secrets-prod.txt"
+    permission: ""  # Missing or empty permission
+  #- name: "default-permissions.txt"
+  #  permission: null  # Explicitly null permission
