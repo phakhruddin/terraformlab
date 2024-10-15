@@ -1,0 +1,5 @@
+amis:
+  - ami: "ami-12345678"
+    architecture: "x86_64"
+  - ami: "ami-87654321"
+    architecture: "arm64"
