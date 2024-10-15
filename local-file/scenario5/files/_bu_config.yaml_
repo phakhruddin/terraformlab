@@ -1,0 +1,5 @@
+business_units:
+  - engineering
+  - marketing
+  - training
+  - finance  # User can add more BUs dynamically

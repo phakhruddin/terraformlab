@@ -1,0 +1,52 @@
+provider "local" {}
+
+# Define the environment variable
+variable "env" {
+  description = "The environment (prod or dev)"
+  type        = string
+  default     = "dev"
+}
+
+# Read the business unit configuration (bu_config.yaml)
+data "local_file" "bu_yaml" {
+  filename = "${path.module}/files/bu_config.yaml"
+}
+
+# Parse the business unit config
+locals {
+  business_units = yamldecode(data.local_file.bu_yaml.content).business_units
+}
+
+# For each business unit, read its file configuration
+data "local_file" "files_config" {
+  for_each = { for bu in local.business_units : bu => bu }
+
+  filename = "${path.module}/files/${each.value}/files_config.yaml"
+}
+
+# Parse the file configurations for each BU
+locals {
+  bu_files = {
+    for bu in local.business_units :
+    bu => yamldecode(data.files_config[bu].content).files
+  }
+}
+
+# Create files for each business unit
+module "file_creator" {
+  for_each = var.env == "prod" ? local.business_units : {}
+
+  source = "./modules/file_creator"
+
+  bu       = each.value                         # Business unit subdirectory
+  filename = local.bu_files[each.value][0].name # File name from the YAML
+  content  = "This is a managed file for ${each.value} in the ${var.env} environment."
+
+  # Handle null or empty permissions
+  permission = can(local.bu_files[each.value][0].permission) && local.bu_files[each.value][0].permission != null && length(trimspace(local.bu_files[each.value][0].permission)) > 0 ? local.bu_files[each.value][0].permission : "644"
+}
+
+# Output the created files
+output "created_files" {
+  value = [for file in module.file_creator : file.value["created_file"]]
+}
