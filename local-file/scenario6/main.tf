@@ -69,12 +69,12 @@ locals {
 }
 
 resource "null_resource" "print_instance_info" {
-  for_each = { for inst in local.instance_data : inst => inst }
+  for_each = { for inst in local.instance_data : inst.name => inst }
   provisioner "local-exec" {
-    command = "echo 'instance list' : ${each.value.inst}"
+    command = "echo 'instance list' : ${each.value.name}"
   }
 }
 
-output "instance_list_details" {
-    value = { for inst in local.instance_data : inst => " Instance List is ${inst} "  }
-}
+#output "instance_list_details" {
+ #   value = { for inst in local.instance_data : inst => " Instance List is ${inst} "  }
+#}
