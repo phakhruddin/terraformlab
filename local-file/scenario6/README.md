@@ -1,6 +1,7 @@
 ```javascript
 // Code from the Gist
-<script src="https://gist.github.com/xero/7af221436757237cbb76990377f330ef.js"></script>```
+<script src="https://gist.github.com/xero/7af221436757237cbb76990377f330ef.js"></script>
+
 
 To make Terraform display a parameter or value for each loop iteration during a `for_each` loop, you can use the **`local-exec` provisioner** inside a `null_resource` or print values using **`output`** blocks. These techniques can help you display a parameter or message for each resource in a loop.
 
