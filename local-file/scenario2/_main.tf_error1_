@@ -1,0 +1,35 @@
+provider "local" {}
+
+# Define the environment variable
+variable "env" {
+  description = "The environment (prod or dev)"
+  type        = string
+  default     = "dev"  # Default to "dev", change to "prod" as needed
+}
+
+# Read the YAML file containing file names and permissions
+data "local_file" "files_yaml" {
+  filename = "${path.module}/files/files_config.yaml"
+}
+
+# Parse the YAML content
+locals {
+  files_config = yamldecode(data.local_file.files_yaml.content).files
+}
+
+# Create files only if the environment is "prod"
+resource "local_file" "managed_files" {
+  for_each = { for file in local.files_config : file.name => file }
+
+  # This will only execute if the environment is "prod"
+  count = var.env == "prod" ? 1 : 0
+
+  filename = each.value.name
+  content  = "This is a managed file for ${each.value.name} in the ${var.env} environment."
+  file_permission = each.value.permission
+}
+
+# Outputs
+output "created_files" {
+  value = [for file in local_file.managed_files : file.filename]
+}
