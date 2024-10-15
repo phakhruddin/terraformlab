@@ -57,3 +57,24 @@ resource "null_resource" "print_ami_info" {
 output "ami_architecture_details" {
   value = { for ami_info in local.ami_data : ami_info.ami => "Architecture: ${ami_info.architecture}" }
 }
+
+# Instance as a user input
+
+data "local_file" "instance_list" {
+  filename = "${path.module}/input_instance.yaml"
+}
+
+locals {
+  instance_data = yamldecode(data.local_file.instance_list.content).other_instances
+}
+
+resource "null_resource" "print_instance_info" {
+  for_each = { for inst in local.instance_data : inst.name => inst }
+  provisioner "local-exec" {
+    command = "echo 'instance list' : ${each.value.name}"
+  }
+}
+
+#output "instance_list_details" {
+ #   value = { for inst in local.instance_data : inst => " Instance List is ${inst} "  }
+#}
