@@ -1,16 +1,63 @@
-variable "instances" {
-  description = "A map of instance names and types"
-  type        = map(string)
-  default     = {
-    instance1 = "t2.micro"
-    instance2 = "t3.micro"
+provider "local" {}
+
+# Define the environment variable
+variable "env" {
+  description = "The environment (prod or dev)"
+  type        = string
+  default     = "dev"
+}
+
+# Read the business unit configuration (bu_config.yaml)
+data "local_file" "bu_yaml" {
+  filename = "${path.module}/files/bu_config.yaml"
+}
+
+# Parse the business unit config
+locals {
+  business_units = yamldecode(data.local_file.bu_yaml.content).business_units
+}
+
+# For each business unit, read its file configuration
+data "local_file" "files_config" {
+  for_each = { for bu in local.business_units : bu.name => bu }
+
+  filename = "${path.module}/files/${each.value.name}/files_config.yaml"
+
+}
+
+output "bu_filename" {
+  value = [for bu in data.local_file.files_config : bu.filename]
+}
+
+
+# Parse the file configurations for each BU
+locals {
+  bu_files = {
+    for bu in local.business_units :
+    bu.name => yamldecode(data.local_file.files_config[bu.name].content).files
   }
 }
 
-resource "null_resource" "print_parameter" {
-  for_each = var.instances
+output "bu_files_name" {
+  value = [for bu in local.bu_files : bu]
+}
 
-  provisioner "local-exec" {
-    command = "echo 'Instance Name: ${each.key}, Instance Type: ${each.value}'"
-  }
+# Create files for each business unit
+module "file_creator" {
+  for_each = var.env == "prod" ? { for bu in local.business_units : bu.name => bu } : {}
+
+  source = "./modules/file_creator"
+
+  bu       = each.value                         # Business unit subdirectory
+  filename = local.bu_files[each.value][0].name # File name from the YAML
+
+  content = "This is a managed file for ${each.value} in the ${var.env} environment."
+
+  # Handle null or empty permissions
+  permission = can(local.bu_files[each.value][0].permission) && local.bu_files[each.value][0].permission != null && length(trimspace(local.bu_files[each.value][0].permission)) > 0 ? local.bu_files[each.value][0].permission : "644"
+}
+
+# Output the created files
+output "created_files" {
+  value = [for file in module.file_creator : file.value["created_file"]]
 }
