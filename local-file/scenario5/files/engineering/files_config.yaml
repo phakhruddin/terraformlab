@@ -1,0 +1,7 @@
+files:
+  - name: "config-prod.txt"
+    permission: "600"
+  - name: "secrets-prod.txt"
+    permission: "640"
+  - name: "db-prod.txt"
+    permission: "640"
