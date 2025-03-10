@@ -245,7 +245,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss" {
     ip_configuration {
       name      = "vmss-ipconfig"
       primary   = true
-      subnet_id = azurerm_subnet.ingest.id
+      subnet_id = azurerm_subnet.private.id
 
       load_balancer_backend_address_pool_ids = [
         azurerm_lb_backend_address_pool.alb_backend_pool.id
@@ -272,8 +272,31 @@ apt update -y
 apt install nginx -y
 systemctl start nginx
 systemctl enable nginx
+
+# Create a custom HTML page
+cat <<EOT > /var/www/html/index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello from Azure VMSS</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #0078D7; }
+    </style>
+</head>
+<body>
+    <h1>Hello World from Azure VMSS!</h1>
+    <p>This page is served from an Nginx web server running inside an Azure Virtual Machine Scale Set.</p>
+</body>
+</html>
+EOT
+
+# Restart Nginx to apply changes
+systemctl restart nginx
 EOF
-  )
+)
 
   # Auto-scale Policy
   automatic_os_upgrade_policy {
