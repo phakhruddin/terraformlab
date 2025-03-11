@@ -304,3 +304,38 @@ EOF
     enable_automatic_os_upgrade = true
   }
 }
+
+# Create Azure Storage Account for Logs
+resource "azurerm_storage_account" "alb_logs" {
+  name                     = "deenalbstorage"
+  resource_group_name      = azurerm_resource_group.deen_test1.name
+  location                 = azurerm_resource_group.deen_test1.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"   # Locally redundant storage to save cost
+}
+
+# Create Storage Container for ALB Logs
+resource "azurerm_storage_container" "alb_logs_container" {
+  name                  = "alb-logs"
+  storage_account_id    = azurerm_storage_account.alb_logs.id
+  container_access_type = "private"
+}
+
+# Enable Diagnostic Logs for Public ALB
+resource "azurerm_monitor_diagnostic_setting" "alb_diagnostic" {
+  name               = "alb-logs"
+  target_resource_id = "/subscriptions/${var.subscription_id}/resourceGroups/${azurerm_resource_group.deen_test1.name}/providers/Microsoft.Network/loadBalancers/public-alb"
+
+  storage_account_id = azurerm_storage_account.alb_logs.id
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+  }
+}
+
+# Variables for Subscription ID
+variable "subscription_id" {
+  description = "Azure Subscription ID"
+  type        = string
+}
