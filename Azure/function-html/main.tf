@@ -228,7 +228,7 @@ resource "azurerm_linux_function_app" "update_web_app" {
 
   app_settings = {
     "FUNCTIONS_WORKER_RUNTIME"     = "python"
-    "WEBSITE_RUN_FROM_PACKAGE"     = "1"
+    "WEBSITE_RUN_FROM_PACKAGE"     = "0"
     "VM_IP"                        = azurerm_network_interface.vm_nic.private_ip_address
     "VM_USERNAME"                  = var.vm_admin_username
     "VM_PASSWORD"                  = var.vm_admin_password
