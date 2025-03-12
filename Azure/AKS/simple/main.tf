@@ -4,7 +4,7 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "rg" {
   name     = "aks-resource-group"
-  location = "West US"
+  location = "West US 2"
 }
 
 resource "azurerm_kubernetes_cluster" "aks" {
