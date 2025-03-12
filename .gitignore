@@ -9,3 +9,7 @@
 
 # Ignore Terraform plan files
 *.tfplan
+
+#zip
+*.zip
+**/*.zip
