@@ -1,0 +1,268 @@
+provider "azurerm" {
+  features {}
+}
+
+# Random string for unique names
+resource "random_string" "random" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
+# Resource Group
+resource "azurerm_resource_group" "rg" {
+  name     = "rg-function-demo"
+  location = "West US 2"
+}
+
+# Storage account for Function App
+resource "azurerm_storage_account" "storage" {
+  name                     = "stfunc${random_string.random.result}"
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = azurerm_resource_group.rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+# App Service Plan
+resource "azurerm_service_plan" "asp" {
+  name                = "asp-function-demo"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  os_type             = "Linux"
+  sku_name            = "Y1" # Consumption plan (serverless)
+}
+
+# Function App
+resource "azurerm_linux_function_app" "function_app" {
+  name                = "func-http-${random_string.random.result}"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+
+  storage_account_name       = azurerm_storage_account.storage.name
+  storage_account_access_key = azurerm_storage_account.storage.primary_access_key
+  service_plan_id            = azurerm_service_plan.asp.id
+
+  site_config {
+    application_stack {
+      python_version = "3.9"
+    }
+    cors {
+      allowed_origins = ["*"]
+    }
+  }
+
+  app_settings = {
+    "FUNCTIONS_WORKER_RUNTIME" = "python"
+    "WEBSITE_RUN_FROM_PACKAGE" = "0"
+  }
+}
+
+# Create local function files
+resource "local_file" "init_py" {
+  content = <<EOF
+import logging
+import datetime
+import platform
+import os
+import json
+import azure.functions as func
+
+def main(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info('Python HTTP trigger function processed a request.')
+
+    # Get system information
+    system_info = {
+        "hostname": platform.node(),
+        "platform": platform.platform(),
+        "python_version": platform.python_version(),
+        "current_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "function_app_name": os.environ.get("WEBSITE_SITE_NAME", "Unknown"),
+        "region": os.environ.get("REGION_NAME", "Unknown")
+    }
+    
+    # Create a nice HTML response
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Azure Function Status</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f0f0f0;
+                color: #333;
+            }}
+            .container {{
+                max-width: 800px;
+                margin: 0 auto;
+                background-color: white;
+                padding: 20px;
+                border-radius: 5px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }}
+            h1 {{
+                color: #0078d4;
+                margin-top: 0;
+            }}
+            .status {{
+                padding: 15px;
+                background-color: #e6f7ff;
+                border-left: 4px solid #0078d4;
+                margin-bottom: 20px;
+            }}
+            .info-table {{
+                width: 100%;
+                border-collapse: collapse;
+            }}
+            .info-table th, .info-table td {{
+                padding: 10px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }}
+            .info-table th {{
+                background-color: #f2f2f2;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Azure Function Status</h1>
+            <div class="status">
+                <strong>Status:</strong> Running
+            </div>
+            
+            <h2>System Information</h2>
+            <table class="info-table">
+                <tr>
+                    <th>Property</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td>Function App Name</td>
+                    <td>{system_info["function_app_name"]}</td>
+                </tr>
+                <tr>
+                    <td>Current Time</td>
+                    <td>{system_info["current_time"]}</td>
+                </tr>
+                <tr>
+                    <td>Hostname</td>
+                    <td>{system_info["hostname"]}</td>
+                </tr>
+                <tr>
+                    <td>Platform</td>
+                    <td>{system_info["platform"]}</td>
+                </tr>
+                <tr>
+                    <td>Python Version</td>
+                    <td>{system_info["python_version"]}</td>
+                </tr>
+                <tr>
+                    <td>Region</td>
+                    <td>{system_info["region"]}</td>
+                </tr>
+            </table>
+        </div>
+    </body>
+    </html>
+    """
+
+    # Return response
+    return func.HttpResponse(
+        html_content,
+        mimetype="text/html"
+    )
+EOF
+  filename = "${path.module}/HttpTrigger/__init__.py"
+}
+
+resource "local_file" "function_json" {
+  content = <<EOF
+{
+  "bindings": [
+    {
+      "authLevel": "anonymous",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": [
+        "get",
+        "post"
+      ]
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "$return"
+    }
+  ]
+}
+EOF
+  filename = "${path.module}/HttpTrigger/function.json"
+}
+
+resource "local_file" "host_json" {
+  content = <<EOF
+{
+  "version": "2.0",
+  "extensionBundle": {
+    "id": "Microsoft.Azure.Functions.ExtensionBundle",
+    "version": "[3.*, 4.0.0)"
+  }
+}
+EOF
+  filename = "${path.module}/host.json"
+}
+
+resource "local_file" "requirements_txt" {
+  content = <<EOF
+azure-functions
+EOF
+  filename = "${path.module}/requirements.txt"
+}
+
+# Create a zip file of the function app
+data "archive_file" "function_app_zip" {
+  type        = "zip"
+  source_dir  = "${path.module}"
+  output_path = "${path.module}/function_app.zip"
+  excludes    = ["terraform.tfstate", "terraform.tfstate.backup", ".terraform", "*.tf"]
+  
+  depends_on = [
+    local_file.init_py,
+    local_file.function_json,
+    local_file.host_json,
+    local_file.requirements_txt
+  ]
+}
+
+# Deploy function code using deployment zip
+resource "azurerm_function_app_function" "http_function" {
+  name            = "HttpTrigger"
+  function_app_id = azurerm_linux_function_app.function_app.id
+  language        = "Python"
+  test_data       = jsonencode({ "method" : "get" })
+  config_json     = jsonencode({ "bindings" : jsondecode(local_file.function_json.content)["bindings"] })
+  
+  file {
+    name    = "function.json"
+    content = local_file.function_json.content
+  }
+  
+  file {
+    name    = "__init__.py"
+    content = local_file.init_py.content
+  }
+}
+
+# Output the function URL
+output "function_app_default_hostname" {
+  value = "https://${azurerm_linux_function_app.function_app.default_hostname}"
+}
+
+output "function_url" {
+  value = "https://${azurerm_linux_function_app.function_app.default_hostname}/api/HttpTrigger"
+}
