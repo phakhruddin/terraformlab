@@ -1466,6 +1466,322 @@ I0312 18:43:58.878282       1 proxier.go:1494] "Reloading service iptables data"
 I0312 18:43:58.919623       1 proxier.go:799] "SyncProxyRules complete" elapsed="47.633089ms"
 I0312 18:43:58.919671       1 bounded_frequency_runner.go:296] sync-runner: ran, next possible in 1s, periodic in 1h0m0s
 ```
+---
+
+The API Server is a key component of the Kubernetes Control Plane, and it does not run on the worker nodes. Instead, it runs on the Kubernetes Control Plane (Managed by Azure Kubernetes Service in AKS).
+
+Since AKS abstracts the control plane, you cannot directly access the API Server as a pod like you would in a self-managed Kubernetes cluster. However, you can verify the API Server’s availability and connectivity.
+
+🔍 1. How to Check API Server Status in AKS
+
+Option 1: Use kubectl cluster-info
+
+This command will show the API Server’s URL and whether it is reachable.
+
+```sh
+kubectl cluster-info
+```
+Example output:
+
+Kubernetes control plane is running at https://example-aks-dns-region.azmk8s.io
+CoreDNS is running at https://10.0.0.10
+
+```sh
+kubectl cluster-info
+
+Kubernetes control plane is running at https://myaks-3ahaxxbb.hcp.westus2.azmk8s.io:443
+CoreDNS is running at https://myaks-3ahaxxbb.hcp.westus2.azmk8s.io:443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+Metrics-server is running at https://myaks-3ahaxxbb.hcp.westus2.azmk8s.io:443/api/v1/namespaces/kube-system/services/https:metrics-server:/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+```
+
+Option 2: Get API Server URL from AKS
+
+If kubectl cluster-info does not show the API Server, try:
+
+az aks show --resource-group <your-resource-group> --name <your-aks-cluster> --query "fqdn" -o tsv
+
+This will return something like:
+
+example-aks-dns-region.azmk8s.io
+
+```sh
+az aks show --resource-group aks-resource-group --name myAKSCluster --query "fqdn" -o tsv
+myaks-3ahaxxbb.hcp.westus2.azmk8s.io
+```
+
+Option 3: Directly Check API Server Logs
+
+Since AKS manages the control plane, you cannot SSH into it. However, you can check the API Server logs from Azure Monitor if you enabled logging.
+
+az aks get-credentials --resource-group <your-resource-group> --name <your-aks-cluster>
+kubectl get events -A
+
+This will show any control plane events.
+
+```sh
+az aks get-credentials  --resource-group aks-resource-group  --name myAKSCluster
+kubectl get events  -A
+kubectl get events -A
+No resources found
+```
+
+🔍 2. Why You Can’t See kube-apiserver in kubectl get pods
+
+In self-hosted Kubernetes (e.g., kubeadm clusters), the API Server runs as a pod inside the kube-system namespace.
+You would typically see it with:
+
+kubectl get pods -n kube-system
+
+However, in AKS, Microsoft fully manages the control plane, so you do not see:
+	•	kube-apiserver
+	•	etcd
+	•	kube-controller-manager
+	•	kube-scheduler
+
+Instead, you only manage worker nodes.
+
+🔍 3. How to Verify API Server Health
+
+Option 1: Test Direct API Communication
+
+Run:
+
+kubectl get --raw /readyz
+
+This will return:
+
+ok
+
+If the API Server is healthy.
+
+```sh
+kubectl get --raw /readyz
+
+ok%                    
+```
+
+Option 2: Check API Server Logs
+
+Since AKS does not expose the control plane, you can only check logs using Azure Diagnostics Settings:
+	1.	Open Azure Portal
+	2.	Navigate to Azure Kubernetes Service -> Select Your Cluster
+	3.	Under Monitoring, go to Diagnostic Settings
+	4.	Enable Kubernetes API Server Logs
+	5.	View logs in Log Analytics Workspace
+
+Example Log Query:
+
+AzureDiagnostics
+| where Category == "kube-apiserver"
+| order by TimeGenerated desc
+
+🔍 4. What If the API Server is Down?
+
+If kubectl commands are failing, you can:
+	1.	Verify Network Connectivity
+
+az aks show --resource-group <your-rg> --name <your-aks-cluster> --query "fqdn"
+nslookup <output-fqdn>
+
+```sh
+nslookup myaks-3ahaxxbb.hcp.westus2.azmk8s.io
+Server:         2001:558:feed::1
+Address:        2001:558:feed::1#53
+
+Non-authoritative answer:
+Name:   myaks-3ahaxxbb.hcp.westus2.azmk8s.io
+Address: 20.72.246.29
+```
 
 
+	2.	Check AKS Health
+
+az aks show --resource-group <your-rg> --name <your-aks-cluster> --query "powerState.code"
+
+If it returns "Running", your cluster is healthy.
+
+```sh
+az aks show --resource-group aks-resource-group --name myAKSCluster --query "powerState.code"
+"Running"
+```
+
+	3.	Restart AKS Control Plane (Last Resort)
+
+az aks stop --name <your-aks-cluster> --resource-group <your-rg>
+az aks start --name <your-aks-cluster> --resource-group <your-rg>
+
+🛠️ Summary
+
+✅ You won’t see kube-apiserver in AKS because Azure fully manages the control plane.
+✅ Use kubectl cluster-info to check if the API Server is running.
+✅ Test /readyz endpoint to confirm the API Server is working.
+✅ Enable Diagnostic Logs in Azure Monitor to view API Server logs.
+
+---
+
+✅ Best Practices & Considerations
+	1.	Security:
+	•	The current cluster is public; consider enabling private cluster mode.
+	•	Implement RBAC (Role-Based Access Control) for security.
+	•	Use Azure AD Integration for authentication.
+	2.	Scalability:
+	•	Node Autoscaling can be enabled with enable_auto_scaling = true.
+	•	Consider using multiple node pools for workload separation.
+	3.	Networking:
+	•	Your cluster uses the default network settings.
+	•	You may want to configure Azure CNI for better networking performance.
+	4.	Monitoring & Logging:
+	•	Enable Azure Monitor for Containers for observability.
+	•	Integrate with Log Analytics Workspace for logs and metrics.
+	5.	Cost Optimization:
+	•	Use Spot Instances or Reserved Instances for cost savings.
+	•	Reduce unused resources and optimize VM sizes.
+	6.	Storage Considerations:
+	•	You can use Azure Files or Azure Disks for persistent storage.
+	•	Check PVC (Persistent Volume Claims) if workloads require storage.
+	7.	CI/CD Pipeline:
+	•	Automate deployments using GitHub Actions, Azure DevOps, or Terraform Cloud.
+	•	Implement Helm Charts for better application management.
+
+
+---
+
+Configuring Azure CNI for Better Networking Performance in AKS
+
+When deploying Azure Kubernetes Service (AKS), choosing the right networking model is crucial for performance, scalability, and security. By default, AKS supports two main networking models:
+	1.	Azure CNI (Container Networking Interface)
+	2.	Kubenet (Basic Kubernetes Networking)
+
+For better networking performance, Azure CNI is the recommended option as it allows for direct IP assignment, lower latency, and improved network security.
+
+🔹 Why Configure Azure CNI?
+
+✅ 1. Improved Networking Performance
+	•	Pods get IPs directly from the Azure Virtual Network (VNet) instead of using a NAT-based overlay like Kubenet.
+	•	This reduces latency and improves pod-to-pod and pod-to-service communication.
+	•	There is no need for additional NAT translations, making traffic more efficient.
+
+✅ 2. Enhanced Scalability
+	•	Azure CNI scales better for large workloads and high-performance applications.
+	•	It supports thousands of pods per cluster without requiring complex IP management.
+	•	Unlike Kubenet, which has a hard limit on IP allocations, Azure CNI dynamically allocates IPs from the VNet.
+
+✅ 3. Direct Connectivity to Azure Services
+	•	Since pods get real VNet IPs, they can communicate directly with Azure services (e.g., Azure SQL, Storage Accounts, APIs) without requiring extra NAT configurations.
+	•	This is essential for hybrid cloud setups where Kubernetes workloads interact with Azure-hosted databases or services.
+
+✅ 4. Native Azure Networking & Security Support
+	•	Pods integrate with Azure NSGs (Network Security Groups), which allows fine-grained network policies for traffic control.
+	•	You can apply Azure Firewall, Private Link, and VNet peering to secure pod communications at an enterprise level.
+	•	Supports Azure Private DNS for internal name resolution between services.
+
+✅ 5. More Efficient Load Balancing
+	•	Azure CNI works natively with Azure Load Balancers, reducing overhead when exposing Kubernetes services externally.
+	•	Load balancer rules automatically map to pod IPs, leading to faster and more efficient request routing.
+
+🔹 How to Configure Azure CNI for AKS?
+
+1️⃣ Creating a New AKS Cluster with Azure CNI
+
+You can enable Azure CNI during AKS cluster creation using Azure CLI, Terraform, or the Azure Portal.
+
+Using Azure CLI
+
+```sh
+az aks create \
+  --resource-group myResourceGroup \
+  --name myAKSCluster \
+  --network-plugin azure \
+  --vnet-subnet-id <subnet-ID> \
+  --enable-network-policy
+  ```
+
+	•	The --network-plugin azure flag enables Azure CNI.
+	•	The --vnet-subnet-id specifies the Azure VNet subnet for IP allocation.
+
+Using Terraform
+
+```terraform
+resource "azurerm_kubernetes_cluster" "aks" {
+  name                = "myAKSCluster"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  dns_prefix          = "myaks"
+
+  default_node_pool {
+    name       = "default"
+    node_count = 3
+    vm_size    = "Standard_D4s_v3"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  network_profile {
+    network_plugin    = "azure"   # 👈 Enables Azure CNI
+    network_policy    = "calico"  # 👈 Enables network policies
+    service_cidr      = "10.2.0.0/16"
+    dns_service_ip    = "10.2.0.10"
+    docker_bridge_cidr = "172.17.0.1/16"
+  }
+}
+```
+
+2️⃣ Enabling Azure CNI on an Existing AKS Cluster
+
+If you need to switch from Kubenet to Azure CNI on an existing cluster:
+
+az aks update \
+  --resource-group myResourceGroup \
+  --name myAKSCluster \
+  --network-plugin azure
+
+	⚠️ Note: Switching from Kubenet to Azure CNI requires recreating your cluster as the networking model cannot be changed in place.
+
+🔹 Verifying Azure CNI is Configured Correctly
+
+✅ Check if Pods Have VNet IPs
+
+After deploying your AKS cluster, check that pods have Azure VNet IP addresses:
+
+kubectl get pods -A -o wide
+
+If the EXTERNAL-IP of the pods matches your Azure VNet IP range, Azure CNI is correctly configured.
+
+✅ Confirm Network Policies Work
+
+Azure CNI supports Calico network policies to restrict traffic between pods:
+
+kubectl apply -f https://docs.projectcalico.org/manifests/calico-policy-only.yaml
+kubectl get networkpolicies -A
+
+🔹 Additional Performance Optimizations
+
+🔥 1. Use Private AKS Clusters
+	•	Prevent public exposure of AKS by enabling private clusters.
+
+az aks create \
+  --resource-group myResourceGroup \
+  --name myAKSCluster \
+  --enable-private-cluster
+
+🔥 2. Enable VNet Peering for Multi-Region Clusters
+	•	If running multi-region clusters, enable VNet Peering for direct pod communication between clusters.
+
+🔥 3. Optimize IP Allocation with Azure CNI Overlay
+	•	In large clusters, Azure CNI Overlay reduces IP exhaustion by assigning private IP pools instead of public VNet IPs.
+	•	Enable it with:
+
+az aks create --network-plugin azure --network-plugin-mode overlay
+
+🔹 Conclusion
+
+✅ Azure CNI provides better networking performance for AKS by assigning real VNet IPs to pods, reducing latency, and improving scalability.
+✅ It ensures direct connectivity to Azure services and enhanced security with NSGs and Private Link.
+✅ It integrates seamlessly with Azure Load Balancers, DNS, and Firewall policies, making it the best choice for production-grade Kubernetes networking.
+
+By configuring Azure CNI, your AKS cluster benefits from faster, more secure, and scalable networking, making it ideal for high-performance workloads. 🚀
 
