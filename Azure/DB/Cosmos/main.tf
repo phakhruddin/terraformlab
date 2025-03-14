@@ -54,3 +54,61 @@ resource "azurerm_cosmosdb_mongo_collection" "cosmos_collection" {
     unique = true
   }
 }
+
+
+resource "azurerm_storage_account" "func_storage" {
+  name                     = "funcstoragewrite"
+  resource_group_name      = azurerm_resource_group.cosmos_rg.name
+  location                 = azurerm_resource_group.cosmos_rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_storage_container" "func_container" {
+  name                  = "function-code"
+  storage_account_id    = azurerm_storage_account.func_storage.id
+  container_access_type = "private"
+}
+
+resource "azurerm_service_plan" "function_plan" {
+  name                = "func-write-plan"
+  resource_group_name = azurerm_resource_group.cosmos_rg.name
+  location            = azurerm_resource_group.cosmos_rg.location
+  os_type             = "Linux"
+  sku_name            = "Y1" # Consumption plan
+}
+
+data "azurerm_cosmosdb_account" "cosmos_conn" {
+  name                = azurerm_cosmosdb_account.cosmos_account.name
+  resource_group_name = azurerm_resource_group.cosmos_rg.name
+}
+
+resource "azurerm_linux_function_app" "func_write" {
+  name                       = "func-write-cosmos"
+  resource_group_name        = azurerm_resource_group.cosmos_rg.name
+  location                   = azurerm_resource_group.cosmos_rg.location
+  service_plan_id            = azurerm_service_plan.function_plan.id
+  storage_account_name       = azurerm_storage_account.func_storage.name
+  storage_account_access_key = azurerm_storage_account.func_storage.primary_access_key
+
+  site_config {
+    application_stack {
+      python_version = "3.8"
+    }
+  }
+
+  app_settings = {
+    "COSMOS_CONNECTION_STRING" = data.azurerm_cosmosdb_account.cosmos_conn.primary_key
+    #"COSMOS_CONNECTION_STRING" = azurerm_cosmosdb_account.cosmos_account.connection_strings[0]
+    "FUNCTIONS_WORKER_RUNTIME" = "python"
+    "AzureWebJobsStorage"      = azurerm_storage_account.func_storage.primary_connection_string
+  }
+}
+
+resource "azurerm_storage_blob" "function_code_blob" {
+  name                   = "write-function.zip"
+  storage_account_name   = azurerm_storage_account.func_storage.name
+  storage_container_name = azurerm_storage_container.func_container.name
+  type                   = "Block"
+  source                 = "write-function.zip"  # Ensure this zip exists locally before running terraform apply
+}
