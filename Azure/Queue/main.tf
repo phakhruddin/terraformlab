@@ -7,7 +7,7 @@ resource "azurerm_resource_group" "queue_rg" {
   location = "West US 2"
 }
 
-# 🔹 Create Storage Account for Queue
+#  Create Storage Account for Queue
 resource "azurerm_storage_account" "queue_storage" {
   name                     = "queueprocessstorage"
   resource_group_name      = azurerm_resource_group.queue_rg.name
@@ -16,13 +16,13 @@ resource "azurerm_storage_account" "queue_storage" {
   account_replication_type = "LRS"
 }
 
-# 🔹 Create a Queue inside Storage Account
+# Create a Queue inside Storage Account
 resource "azurerm_storage_queue" "task_queue" {
   name                 = "task-queue"
   storage_account_name = azurerm_storage_account.queue_storage.name
 }
 
-# 🔹 Create Function App Service Plan
+# Create Function App Service Plan
 resource "azurerm_service_plan" "function_plan" {
   name                = "queue-function-plan"
   resource_group_name = azurerm_resource_group.queue_rg.name
@@ -31,7 +31,7 @@ resource "azurerm_service_plan" "function_plan" {
   sku_name            = "Y1" # Consumption plan
 }
 
-# 🔹 Create Function App (without ZIP file upload)
+#  Create Function App (without ZIP file upload)
 resource "azurerm_linux_function_app" "queue_function" {
   name                       = "func-queue-processor"
   resource_group_name        = azurerm_resource_group.queue_rg.name
