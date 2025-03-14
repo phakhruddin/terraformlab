@@ -66,6 +66,10 @@ terraform apply -auto-approve
 
 After the deployment, you can connect to the database using **Azure Data Studio** or **SQL Server Management Studio (SSMS)**.
 
+```sh
+
+```
+
 ---
 
 ## **✅ Option 2: Deploy Azure Cosmos DB (NoSQL)**
