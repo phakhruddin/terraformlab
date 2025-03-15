@@ -70,3 +70,21 @@ The Terraform output will provide:
 - Your function URL
 - The name of your Application Insights resource
 - The Azure CLI command to stream logs
+
+## Sample Ouput
+
+Overview:
+<img width="1706" alt="Image" src="https://github.com/user-attachments/assets/bfc61d3d-e895-4d21-84ba-808c1871671b" />
+
+Sample page with:
+```
+https://func-logs-8xdy7f57.azurewebsites.net/api/LoggingFunction?level=debug&message=Custom debug message
+```
+<img width="1488" alt="Image" src="https://github.com/user-attachments/assets/37fff57c-b9b4-4ae4-8b63-6317da6dd838" />
+
+
+Metrics, Invocations, Logs, and Query:
+<img width="1700" alt="Image" src="https://github.com/user-attachments/assets/e6df86ff-b957-45f7-83fb-1456acfe8802" />
+<img width="1700" alt="Image" src="https://github.com/user-attachments/assets/e2c18779-d0bf-41be-b29a-feec49627112" />
+<img width="1681" alt="Image" src="https://github.com/user-attachments/assets/d49ba606-ed2c-4e05-8f40-c90e2db1b507" />
+<img width="1706" alt="Image" src="https://github.com/user-attachments/assets/a34884c9-b731-4cfb-8f25-c6300cc70801" />
