@@ -130,7 +130,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         <h3>Method 3: Azure CLI</h3>
         <p>Use the following command to stream logs:</p>
         <div class="log-command">
-            az webapp log tail --name func-logs-8xdy7f57 --resource-group rg-function-logs
+            az webapp log tail --name "func-logs-8xdy7f57" --resource-group rg-function-logs
         </div>
         
         <div class="tip">
