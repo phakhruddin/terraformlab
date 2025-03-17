@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: team-dev
+data:
+  app-settings.json: |
+    {
+      "environment": "development",
+      "logLevel": "debug",
+      "apiEndpoint": "https://api.example.com"
+    }
+  database.conf: |
+    host=db.example.com
+    port=5432
+    max_connections=100

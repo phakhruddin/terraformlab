@@ -1,0 +1,204 @@
+provider "azurerm" {
+  features {}
+}
+
+# Variables
+variable "resource_group_name" {
+  default = "aks-admin-practice-rg"
+}
+
+variable "location" {
+  default = "eastus"
+}
+
+variable "cluster_name" {
+  default = "admin-practice-aks"
+}
+
+variable "kubernetes_version" {
+  default = "1.26.6"
+}
+
+variable "system_node_count" {
+  default = 3
+}
+
+variable "system_node_vm_size" {
+  default = "Standard_DS2_v2"
+}
+
+# Resource Group
+resource "azurerm_resource_group" "rg" {
+  name     = var.resource_group_name
+  location = var.location
+}
+
+# Log Analytics workspace for monitoring
+resource "azurerm_log_analytics_workspace" "aks" {
+  name                = "aks-workspace"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+# Virtual Network
+resource "azurerm_virtual_network" "vnet" {
+  name                = "aks-vnet"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  address_space       = ["10.0.0.0/16"]
+}
+
+# Subnets
+resource "azurerm_subnet" "aks" {
+  name                 = "aks-subnet"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+# AKS Cluster
+resource "azurerm_kubernetes_cluster" "aks" {
+  name                = var.cluster_name
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  dns_prefix          = var.cluster_name
+  kubernetes_version  = var.kubernetes_version
+  
+
+  default_node_pool {
+    name                = "systempool"
+    node_count          = var.system_node_count
+    vm_size             = var.system_node_vm_size
+    type                = "VirtualMachineScaleSets"
+    min_count           = 2
+    max_count           = 5
+    vnet_subnet_id      = azurerm_subnet.aks.id
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  network_profile {
+    network_plugin    = "azure"
+    network_policy    = "calico"
+    load_balancer_sku = "standard"
+  }
+
+    # Proper format for oms_agent addon in recent provider versions
+  oms_agent {
+    log_analytics_workspace_id = azurerm_log_analytics_workspace.aks.id
+  }
+
+  tags = {
+    Environment = "Practice"
+  }
+
+  }
+  
+
+# User Node Pool
+resource "azurerm_kubernetes_cluster_node_pool" "user" {
+  name                  = "userpool"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+  vm_size               = "Standard_DS3_v2"
+  node_count            = 2
+  min_count             = 1
+  max_count             = 5
+  vnet_subnet_id        = azurerm_subnet.aks.id
+
+  node_labels = {
+    "nodepool-type" = "user"
+    "environment"   = "practice"
+    "nodepoolos"    = "linux"
+  }
+
+  tags = {
+    Environment = "Practice"
+  }
+}
+
+# GPU Node Pool (Uncomment if needed)
+# resource "azurerm_kubernetes_cluster_node_pool" "gpu" {
+#   name                  = "gpupool"
+#   kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+#   vm_size               = "Standard_NC6"
+#   node_count            = 1
+#   availability_zones    = [1, 2, 3]
+#   vnet_subnet_id        = azurerm_subnet.aks.id
+# 
+#   node_labels = {
+#     "nodepool-type" = "gpu"
+#     "environment"   = "practice"
+#     "nodepoolos"    = "linux"
+#   }
+# 
+#   node_taints = [
+#     "gpu=true:NoSchedule"
+#   ]
+# 
+#   tags = {
+#     Environment = "Practice"
+#   }
+# }
+
+# Azure Key Vault
+resource "azurerm_key_vault" "kv" {
+  name                        = "aks-admin-kv-${random_string.random.result}"
+  location                    = azurerm_resource_group.rg.location
+  resource_group_name         = azurerm_resource_group.rg.name
+  enabled_for_disk_encryption = true
+  tenant_id                   = data.azurerm_client_config.current.tenant_id
+  soft_delete_retention_days  = 7
+  purge_protection_enabled    = false
+  enable_rbac_authorization   = true
+  sku_name                    = "standard"
+}
+
+# Create a random string for unique names
+resource "random_string" "random" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
+# Get current client configuration
+data "azurerm_client_config" "current" {}
+
+# Key Vault Secret
+resource "azurerm_key_vault_secret" "db_password" {
+  name         = "database-password"
+  value        = "ExamplePassword123!"
+  key_vault_id = azurerm_key_vault.kv.id
+}
+
+# Enable AKS Key Vault integration
+resource "azurerm_role_assignment" "kv_role" {
+  scope                = azurerm_key_vault.kv.id
+  role_definition_name = "Key Vault Administrator"
+  principal_id         = azurerm_kubernetes_cluster.aks.identity[0].principal_id
+}
+
+# Output values
+output "kube_config" {
+  value     = azurerm_kubernetes_cluster.aks.kube_config_raw
+  sensitive = true
+}
+
+output "cluster_name" {
+  value = azurerm_kubernetes_cluster.aks.name
+}
+
+output "resource_group_name" {
+  value = azurerm_resource_group.rg.name
+}
+
+output "keyvault_name" {
+  value = azurerm_key_vault.kv.name
+}
+
+output "cluster_endpoint" {
+  value = azurerm_kubernetes_cluster.aks.kube_config.0.host
+}
