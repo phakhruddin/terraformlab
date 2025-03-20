@@ -13,3 +13,6 @@
 #zip
 *.zip
 **/*.zip
+.vscode
+.vscode*
+**/.vscode*
