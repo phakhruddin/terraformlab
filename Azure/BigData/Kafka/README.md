@@ -658,4 +658,4 @@ Received Kafka message: Hello from Kafka!
 - Apply **real-time filtering & transformations** on messages.
 - Implement **Azure Monitor & alerts** for Kafka failures.
 
-Would you like help with **storing Kafka messages in a database**? 🚀
+

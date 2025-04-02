@@ -80,7 +80,7 @@ resource "azurerm_storage_blob" "function_code_blob" {
 ### **2️⃣ Function Code (Python)**
 Create the **Azure Function app code** in a folder called `write-function`:
 
-📄 **`write-function/__init__.py`**
+**`write-function/__init__.py`**
 ```python
 import logging
 import azure.functions as func
@@ -106,13 +106,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     return func.HttpResponse(f"Data inserted: {json.dumps(req_body)}", status_code=200)
 ```
 
-📄 **`write-function/requirements.txt`**
+**`write-function/requirements.txt`**
 ```
 azure-functions
 pymongo[srv]
 ```
 
-📄 **Zip the function:**
+**Zip the function:**
 ```sh
 cd write-function
 zip -r ../write-function.zip .
