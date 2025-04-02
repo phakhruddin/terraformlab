@@ -4,14 +4,14 @@ We will deploy **Azure SQL Database** (relational) and **Azure Cosmos DB** (NoSQ
 ---
 
 ## **✅ Option 1: Deploy Azure SQL Database (Relational)**
-### **📌 What This Will Do:**
+### ** What This Will Do:**
 - Creates an **Azure SQL Server**
 - Deploys an **Azure SQL Database**
 - Configures a **firewall rule** to allow your IP to connect
 
 ---
 
-### **📜 Terraform Code for Azure SQL Database**
+### **Terraform Code for Azure SQL Database**
 Create a new Terraform file **`main.tf`** and paste the following:
 
 ```hcl
@@ -73,14 +73,14 @@ After the deployment, you can connect to the database using **Azure Data Studio*
 ---
 
 ## **✅ Option 2: Deploy Azure Cosmos DB (NoSQL)**
-### **📌 What This Will Do:**
+### ** What This Will Do:**
 - Creates an **Azure Cosmos DB Account**
 - Deploys a **Cosmos DB Database**
 - Creates a **NoSQL Container (MongoDB API)**
 
 ---
 
-### **📜 Terraform Code for Azure Cosmos DB (MongoDB API)**
+### ** Terraform Code for Azure Cosmos DB (MongoDB API)**
 Create a new Terraform file **`cosmosdb.tf`**:
 
 ```hcl
@@ -140,7 +140,7 @@ resource "azurerm_cosmosdb_mongo_collection" "cosmos_collection" {
 
 ---
 
-### **🌟 Deploy the Cosmos DB**
+### ** Deploy the Cosmos DB**
 Run the following Terraform commands:
 
 ```sh
