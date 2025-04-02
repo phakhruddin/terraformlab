@@ -17,7 +17,7 @@ This setup will:
 
 ---
 
-## **📌 1️⃣ Terraform Configuration**
+## 1️⃣ Terraform Configuration**
 📄 **`main.tf`**
 ```hcl
 provider "azurerm" {
@@ -66,7 +66,7 @@ resource "azurerm_linux_function_app" "simple_function" {
 
 ---
 
-## **📜 2️⃣ Create Function Code (Python)**
+## **2️⃣ Create Function Code (Python)**
 📄 **`simple-function/__init__.py`**
 ```python
 import logging
@@ -119,7 +119,7 @@ azure-functions
 
 ---
 
-## **📦 3️⃣ Package the Function Code**
+##  3️⃣ Package the Function Code**
 Run:
 ```sh
 cd simple-function
@@ -129,7 +129,7 @@ cd ..
 
 ---
 
-## **🚀 4️⃣ Deploy Terraform Infrastructure**
+##  4️⃣ Deploy Terraform Infrastructure**
 ```sh
 terraform init
 terraform apply -auto-approve
@@ -137,7 +137,7 @@ terraform apply -auto-approve
 
 ---
 
-## **📡 5️⃣ Deploy the Function Code Using `az`**
+## 5️⃣ Deploy the Function Code Using `az`**
 ```sh
 az functionapp deployment source config-zip \
   --resource-group simple-function-rg \
@@ -147,7 +147,7 @@ az functionapp deployment source config-zip \
 
 ---
 
-## **🌍 6️⃣ Get Function URL & Test**
+## 6️⃣ Get Function URL & Test**
 Retrieve function URL:
 ```sh
 az functionapp function show \
@@ -169,7 +169,7 @@ Hello, Azure!
 
 ---
 
-## **📜 7️⃣ View Logs in Azure Portal**
+## 7️⃣ View Logs in Azure Portal**
 1. Open **Azure Portal** → **Function App** (`func-simple-test`).
 2. Navigate to **Logs** under **Monitoring**.
 3. You should see **"Function triggered via HTTP request."**
@@ -181,7 +181,8 @@ az functionapp log tail --name func-simple-test --resource-group simple-function
 
 ---
 
-## **✅ Done!**
+## ✅ Done!**
 - **You can test the function via the Azure UI and logs.**
 - **The logs will show function execution in real-time.**
-- **Next: Want to connect this function to a database or queue? Let me know! 🚀**
+- **Terraform will create the resources in the Azure environment.**
+- **Terraform will destroy the resources in the Azure environment.**
