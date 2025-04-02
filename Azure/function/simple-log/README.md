@@ -243,4 +243,3 @@ azure-functions
 ### **Next Steps**
 - Deploy this and trigger the function with `curl`.
 - Check the logs in Application Insights and let me know what you see!
-- Want to add more logging levels (e.g., `logging.error`) or integrate with another service (e.g., Kafka)? Just ask!
