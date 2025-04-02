@@ -17,8 +17,8 @@ We will create an **Azure Queue Storage** to store tasks, and an **Azure Functio
 
 ---
 
-## **📝 1️⃣ Terraform Configuration**
-### **🔹 Define Infrastructure in `main.tf`**
+## **1️⃣ Terraform Configuration**
+### **Define Infrastructure in `main.tf`**
 ```hcl
 provider "azurerm" {
   features {}
@@ -29,7 +29,7 @@ resource "azurerm_resource_group" "queue_rg" {
   location = "West US 2"
 }
 
-# 🔹 Create Storage Account for Queue
+# Create Storage Account for Queue
 resource "azurerm_storage_account" "queue_storage" {
   name                     = "queueprocessstorage"
   resource_group_name      = azurerm_resource_group.queue_rg.name
@@ -38,13 +38,13 @@ resource "azurerm_storage_account" "queue_storage" {
   account_replication_type = "LRS"
 }
 
-# 🔹 Create a Queue inside Storage Account
+# Create a Queue inside Storage Account
 resource "azurerm_storage_queue" "task_queue" {
   name                 = "task-queue"
   storage_account_name = azurerm_storage_account.queue_storage.name
 }
 
-# 🔹 Create Function App Service Plan
+# Create Function App Service Plan
 resource "azurerm_service_plan" "function_plan" {
   name                = "queue-function-plan"
   resource_group_name = azurerm_resource_group.queue_rg.name
@@ -53,7 +53,7 @@ resource "azurerm_service_plan" "function_plan" {
   sku_name            = "Y1" # Consumption plan
 }
 
-# 🔹 Create Function App (without ZIP file upload)
+# Create Function App (without ZIP file upload)
 resource "azurerm_linux_function_app" "queue_function" {
   name                       = "func-queue-processor"
   resource_group_name        = azurerm_resource_group.queue_rg.name
@@ -311,7 +311,7 @@ Apply complete! Resources: 5 added, 0 changed, 0 destroyed.
 
 ---
 
-## **📜 2️⃣ Create Function Locally**
+## **2️⃣ Create Function Locally**
 📄 **`queue-function/__init__.py`**
 ```python
 import logging
@@ -337,14 +337,14 @@ def main(msg: func.QueueMessage) -> None:
 }
 ```
 
-📄 **`queue-function/requirements.txt`**
+ **`queue-function/requirements.txt`**
 ```
 azure-functions
 ```
 
 ---
 
-## **📦 3️⃣ Package Function Locally**
+## **3️⃣ Package Function Locally**
 ```sh
 cd queue-function
 zip -r ../queue-function.zip .
@@ -353,7 +353,7 @@ cd ..
 
 ---
 
-## **🚀 4️⃣ Deploy Infrastructure with Terraform**
+## **4️⃣ Deploy Infrastructure with Terraform**
 ```sh
 terraform init
 terraform apply -auto-approve
@@ -361,7 +361,7 @@ terraform apply -auto-approve
 
 ---
 
-## **📡 5️⃣ Deploy the Function Code Using `az`**
+##5️⃣ Deploy the Function Code Using `az`**
 ```sh
 az functionapp deployment source config-zip \
   --resource-group queue-resource-group \
@@ -371,7 +371,7 @@ az functionapp deployment source config-zip \
 
 ---
 
-## **🚀 6️⃣ Send a Test Message**
+## 6️⃣ Send a Test Message**
 Once deployed, send a message to the queue:
 ```sh
 az storage message put \
@@ -396,16 +396,16 @@ Processing task: Process this task
 ---
 
 ## **🚀 Next Steps**
-- 🔹 Automate ZIP deployment with a **GitHub Action** or **CI/CD pipeline**.
-- 🔹 Add **more processing logic**, such as **database writes**.
-- 🔹 Use **Service Bus** instead of Queue Storage for more advanced messaging.
+-  Automate ZIP deployment with a **GitHub Action** or **CI/CD pipeline**.
+-  Add **more processing logic**, such as **database writes**.
+-  Use **Service Bus** instead of Queue Storage for more advanced messaging.
 
 ---
 
 ## **🚀 Next Steps**
-- 🔹 Integrate **Event Grid** to trigger processing when data is uploaded
-- 🔹 Store **processed results in Cosmos DB**
-- 🔹 Use **Service Bus** for more advanced messaging
+-  Integrate **Event Grid** to trigger processing when data is uploaded
+-  Store **processed results in Cosmos DB**
+-  Use **Service Bus** for more advanced messaging
 ---
 
 ## ✨ **References**
