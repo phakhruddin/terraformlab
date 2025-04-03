@@ -1783,5 +1783,5 @@ az aks create --network-plugin azure --network-plugin-mode overlay
 ✅ It ensures direct connectivity to Azure services and enhanced security with NSGs and Private Link.
 ✅ It integrates seamlessly with Azure Load Balancers, DNS, and Firewall policies, making it the best choice for production-grade Kubernetes networking.
 
-By configuring Azure CNI, your AKS cluster benefits from faster, more secure, and scalable networking, making it ideal for high-performance workloads. 🚀
+By configuring Azure CNI, your AKS cluster benefits from faster, more secure, and scalable networking, making it ideal for high-performance workloads. 
 
